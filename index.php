@@ -38,7 +38,38 @@
             td > button {
                 font-weight: bolder;
             }
+            .confirmado, .falloBBDD {
+                border: 1px solid gray;
+                border-radius: 0.5rem;
+                margin: 0.5rem;
+                padding: 0.5rem;
+                font-weight: bold;
+                color: #DDD;
+                background-color: #2B1;
+            }
+            .falloBBDD {
+                background-color: #B21;
+            }
         </style>
+        <script>
+            function limpiar(){
+                // Vuelve a poner a "false" el campo oculto del formulario
+                // Para informar al PHP que tratará dicho formulario que no se ha enviado
+                document.getElementById('enviado').value='false';
+                let mensajeConfirmacion = document.getElementsByClassName('confirmado')[0];
+                let mensajeError = document.getElementsByClassName('falloBBDD')[0];
+                // De estar el DIV que muestra un mensaje anterior de confirmación de 
+                // inserción en la BBDD, lo quitamos
+                if (mensajeConfirmacion) {
+                    mensajeConfirmacion.remove();
+                }
+                // De estar el DIV que muestra un mensaje anterior de fallo en la 
+                // inserción en la BBDD, lo quitamos
+                if (mensajeError) {
+                    mensajeError.remove();
+                }
+            }
+        </script>
         <!-- Para probar el documnto en el "Servidor web interno" de PHP https://www.php.net/manual/es/features.commandline.webserver.php 
             Ejecutamos en el directorio dónde se encuentran los fichero .php a probar:
                 $ php -S localhost:8000
@@ -57,15 +88,17 @@
         <div class="pure-g">
             <div class="pure-u-2-6">
                 <!-- Formulario de registro "Form - Pure CSS" https://purecss.io/forms/#aligned-form -->
-                <form class="pure-form pure-form-aligned">
+                <form class="pure-form pure-form-aligned" method="POST">
                     <fieldset>
+                        <legend>Registro de usuarios: </legend>
+                        <input type="hidden" id="enviado" name="enviado" value="false"/>
                         <div class="pure-control-group">
                             <label for="nombre-usuario">Nombre de Usuario</label>
                             <input type="text" id="nombre-usuario" name="nombreUsuario" placeholder="Nombre de usuario" />
                         </div>
                         <div class="pure-control-group">
                             <label for="aligned-password">Password</label>
-                            <input type="password" id="aligned-password" placeholder="Password" />
+                            <input type="password" id="aligned-password" name="password" placeholder="Password" />
                         </div>
                         <div class="pure-control-group">
                             <label for="email-usuario">Email</label>
@@ -76,10 +109,16 @@
                             <input type="date" id="fecha-nacimiento" name="fechaNacimiento" placeholder="Fecha de nacimiento" />
                         </div>
                         <div class="pure-controls">
-                            <button type="submit" class="pure-button pure-button-primary">Registrar</button>
+                            <button type="submit" class="pure-button pure-button-primary" onclick="document.getElementById('enviado').value='true'">Registrar</button>
+                            <button type="reset" class="pure-button pure-button-primary" onclick="limpiar()">Limpiar</button>
                         </div>
                     </fieldset>
                 </form>
+                <!-- Aquí incluiremos el controlador, que recibirá el formulario -->
+                <!-- Para en caso de error en la validación muestre aquí el mensaje de error -->
+                <?php
+                    include "controlador/registroUsuario.php";
+                ?>
             </div>
             <div class="pure-u-4-6">
                 <!-- Tabla "Table - Pure CSS" https://purecss.io/tables/#striped-table -->
@@ -148,6 +187,10 @@
                         </tr>
                         <?php
                             }
+
+                            // Cerramos la conexión con la Base de Datos
+                            // https://www.php.net/manual/es/mysqli.close.php
+                            $conexion->close();
                         ?>
                         <!-- <tr>
                             <td>2</td>
