@@ -5,7 +5,7 @@
     include "modelo/conexion.php";
 
     // Comprobamos si el botón de enviar el formulario se ha presionado
-    // https://www.php.net/manual/es/function.empty
+    // https://www.php.net/manual/es/function.isset.php
     if (isset($_POST["enviado"]) AND ($_POST["enviado"] != "false")){
         // Si se ha pulsado el botón de enviar el formulario
         // validaremos todos los datos del formulario.

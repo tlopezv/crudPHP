@@ -38,7 +38,7 @@
             td > button {
                 font-weight: bolder;
             }
-            .confirmado, .falloBBDD {
+            .confirmado, .falloBBDD, #estadoOperacion {
                 border: 1px solid gray;
                 border-radius: 0.5rem;
                 margin: 0.5rem;
@@ -49,6 +49,15 @@
             }
             .falloBBDD {
                 background-color: #B21;
+            }
+            #estadoOperacion {
+                background-color: #6FF;
+            }
+            .ocultar {
+                display: none;
+            }
+            .mostrar {
+                display: block;
             }
         </style>
         <script>
@@ -68,6 +77,59 @@
                 if (mensajeError) {
                     mensajeError.remove();
                 }
+            }
+
+            function eliminar(id) {
+                // Guardamos una referencia al botón de borrar que se pulsó
+                let aux = event.target || event.srcElement;
+                // Y apuntamos a la fila <tr> en la cuál está:
+                let tr = aux.parentElement.parentElement;
+
+                // Hacemos una petición AJAX al PHP "modelo/eliminarUsuario.php"
+                // https://www.w3schools.com/php/php_ajax_php.asp
+                // https://tutorialesprogramacionya.com/ajaxya/temarios/descripcion.php?punto=5&cod=10&inicio=0
+                
+                // Creamos un objeto "XMLHttpRequest"
+                // Este objeto nos permite enviar y recibir información a través del protocolo HTTP
+                // Sin necesidad de cargar un documento HTML
+                var xmlhttp = new XMLHttpRequest();
+                // Cuando el objeto cambie de estado ejecutará una función
+                xmlhttp.onreadystatechange = function() {
+                    // La propiedad "readyState" del objeto "XMLHttpRequest"
+                    // almacena el estado actual (4 -> Estado Completado, la petición en este caso)
+                    // La propiedad "status" del objeto "XMLHttpRequest"
+                    // almacena el código de respuesta HTTP https://developer.mozilla.org/es/docs/Web/HTTP/Status
+                    if (this.readyState == 4 && this.status == 200) {
+                        // Indicamos que se ha borrado correctamente
+                        // Recuperando el mensaje que devuelve el fichero php que hemos llamado
+                        let mostrarEstado = document.getElementById("estadoOperacion");
+                        mostrarEstado.innerHTML= this.responseText;
+                        // Quitamos la clase que oculta el DIV del mensaje
+                        // https://www.w3schools.com/howto/howto_js_remove_class.asp
+                        mostrarEstado.classList.remove("ocultar");
+                        // Añadimos una clase que hará visible el DIV del mensaje
+                        // https://www.w3schools.com/howto/howto_js_add_class.asp
+                        mostrarEstado.classList.add("mostrar");
+                        // Y a los 5 segundos lo ocultará
+                        // https://www.w3schools.com/jsref/met_win_settimeout.asp
+                        setTimeout(function(){
+                            mostrarEstado.classList.remove("mostrar");
+                            mostrarEstado.classList.add("ocultar");
+                            // Si el mensaje de eliminación no informa de ningún Error
+                            // https://www.w3schools.com/jsref/jsref_includes.asp
+                            if (!mostrarEstado.innerHTML.includes("Error")) {
+                                // entonces quitamos de la tabla al fila correspondiente:
+                                // https://www.w3schools.com/jsref/met_element_remove.asp#gsc.tab=0
+                                tr.remove();
+                            }
+                        },5000);
+                    } 
+                };
+                // Abre la petición HTTP al Servidor (en este caso a "controlador/eliminarUsuario.php")
+                // Pasándole el id que recibe como parámetro esta función
+                xmlhttp.open('GET','controlador/eliminarUsuario.php?id='+id);
+                // Envia la petición HTTP al Servidor
+                xmlhttp.send();
             }
         </script>
         <!-- Para probar el documnto en el "Servidor web interno" de PHP https://www.php.net/manual/es/features.commandline.webserver.php 
@@ -145,12 +207,16 @@
                             // https://www.php.net/manual/es/mysqli.query.php
                             $sql=$conexion->query("SELECT * FROM crudPHP.Usuario");
 
+                            // Para aplicar correctamente los estilos cebreados de la tabla
+                            // En filas contiguas color de fondo diferente
+                            $filaImpar=true;
+
                             // Recorremos los datos obtenidos de la consulta anterior
                             // fila a fila gracias a como lo devuelve la función:
                             // https://www.php.net/manual/es/mysqli-result.fetch-object.php
                             while ($datos = $sql->fetch_object()) {
                                 // Comprobamos si es fila par o impar para aplicar el estilo correspondiente
-                                if ($datos->usrId%2==0){
+                                if ($filaImpar){
                         ?>
                         <tr>
                         <?php
@@ -159,6 +225,8 @@
                         <tr class="pure-table-odd">
                         <?php
                                 }
+                                // Indicamos que si esta fila es Impar la siguiente no lo es
+                                $filaImpar=!$filaImpar;
                                 /*
                                     <?= ?>
                                 Es el equivalente de hacer
@@ -179,7 +247,7 @@
                                     &#9998;
                                 </button>
                                 &nbsp;&nbsp;
-                                <button class="button-error pure-button">
+                                <button class="button-error pure-button" onclick="eliminar(<?= $datos->usrId ?>)">
                                     <!-- https://www.amp-what.com/unicode/search/trash -->
                                     &#128465;
                                 </button>
@@ -233,6 +301,8 @@
                         </tr> -->
                     </tbody>
                 </table>
+                <div id="estadoOperacion" class="ocultar">
+                </div>
             </div>
         </div>
     </body>
