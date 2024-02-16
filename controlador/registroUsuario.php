@@ -6,7 +6,7 @@
 
     // Comprobamos si el botón de enviar el formulario se ha presionado
     // https://www.php.net/manual/es/function.isset.php
-    if (isset($_POST["enviado"]) AND ($_POST["enviado"] != "false")){
+    if (isset($_POST["enviado"]) AND ($_POST["enviado"] != "false") AND ($_POST["enviado"] == "true")){
         // Si se ha pulsado el botón de enviar el formulario
         // validaremos todos los datos del formulario.
         if (!empty($_POST["nombreUsuario"]) 

@@ -59,8 +59,16 @@
             .mostrar {
                 display: block;
             }
+            #btnActualizar {
+                display: none;
+            }
         </style>
         <script>
+            /**
+             * Se encarga de limpiar el formulario, incluyendo
+             * el cuadro de información de la última acción que se realizó con este.
+             * Y muestra el botón "Registrar" (ocultando el de "Actualizar" si fuera necesario)
+             */
             function limpiar(){
                 // Vuelve a poner a "false" el campo oculto del formulario
                 // Para informar al PHP que tratará dicho formulario que no se ha enviado
@@ -77,15 +85,24 @@
                 if (mensajeError) {
                     mensajeError.remove();
                 }
+
+                // Ocultamos el "btnActualizar"
+                document.getElementById("btnActualizar").style.display="none";
+                // Mostramos el "btnRegistrar"
+                document.getElementById("btnRegistrar").style.display="inline-block";
             }
 
+            /**
+             * Haciendo una petición AJAX al script PHP que elimina un registro de la BBDD
+             * Borra el registro de la BBDD y actualiza la vista en la tabla
+             */
             function eliminar(id) {
                 // Guardamos una referencia al botón de borrar que se pulsó
                 let aux = event.target || event.srcElement;
                 // Y apuntamos a la fila <tr> en la cuál está:
                 let tr = aux.parentElement.parentElement;
 
-                // Hacemos una petición AJAX al PHP "modelo/eliminarUsuario.php"
+                // Hacemos una petición AJAX al PHP "controlador/eliminarUsuario.php"
                 // https://www.w3schools.com/php/php_ajax_php.asp
                 // https://tutorialesprogramacionya.com/ajaxya/temarios/descripcion.php?punto=5&cod=10&inicio=0
                 
@@ -120,14 +137,128 @@
                             if (!mostrarEstado.innerHTML.includes("Error")) {
                                 // entonces quitamos de la tabla al fila correspondiente:
                                 // https://www.w3schools.com/jsref/met_element_remove.asp#gsc.tab=0
-                                tr.remove();
+                                //tr.remove();
+                                cargarContenidoTabla();
                             }
-                        },5000);
+                        },3000);
                     } 
                 };
                 // Abre la petición HTTP al Servidor (en este caso a "controlador/eliminarUsuario.php")
                 // Pasándole el id que recibe como parámetro esta función
                 xmlhttp.open('GET','controlador/eliminarUsuario.php?id='+id);
+                // Envia la petición HTTP al Servidor
+                xmlhttp.send();
+            }
+
+            /**
+             * Carga los datos del Usuario de la fila de la tabla en la que se pulsó el botón "Editar"
+             * Al formulario. Ocultando el botón "Registrar" y mostrando el de "Actualizar"
+             */
+            function editar(){
+                // Guardamos una referencia al botón de editar que se pulsó
+                let aux = event.target || event.srcElement;
+                // Y apuntamos a la fila <tr> en la cuál está:
+                let tr = aux.parentElement.parentElement;
+                // Marcando esta fila con la clase ".editando"
+                tr.classList.add("editando");
+
+                // Obtenemos todos los elementos <td> de la fila
+                var td = tr.getElementsByTagName("td");
+                // Y los asignamos a su lugar correspondiente en el formulario
+                document.getElementById("enviado").value=td[0].innerHTML;
+                document.getElementById("nombre-usuario").value=td[1].innerHTML;
+                document.getElementById("aligned-password").value=td[2].innerHTML;
+                document.getElementById("email-usuario").value=td[3].innerHTML;
+                document.getElementById("fecha-nacimiento").value=td[4].innerHTML;
+
+                // Ocultaremos el botón Registrar y mostraremos el botón Actualizar en su lugar en el Formulario.
+                document.getElementById("btnRegistrar").style.display="none";
+                document.getElementById("btnActualizar").style.display="inline-block";     
+            }
+
+            /**
+             * Haciendo una petición AJAX al script PHP que actualiza un registro de la BBDD
+             * Actualiza el registro de la BBDD y actualiza la vista en la tabla
+             */
+            function actualizar() {
+                // Recuperamos la fila en la que se presionó el botón de "Editar"
+                let tr = document.getElementsByClassName("editando")[0];
+
+                // Hacemos una petición AJAX al PHP "controlador/actualizarUsuario.php"
+                // https://www.w3schools.com/php/php_ajax_php.asp
+                // https://tutorialesprogramacionya.com/ajaxya/temarios/descripcion.php?punto=5&cod=10&inicio=0
+                
+                // Creamos un objeto "XMLHttpRequest"
+                // Este objeto nos permite enviar y recibir información a través del protocolo HTTP
+                // Sin necesidad de cargar un documento HTML
+                var xmlhttp = new XMLHttpRequest();
+                // Cuando el objeto cambie de estado ejecutará una función
+                xmlhttp.onreadystatechange = function() {
+                    // La propiedad "readyState" del objeto "XMLHttpRequest"
+                    // almacena el estado actual (4 -> Estado Completado, la petición en este caso)
+                    // La propiedad "status" del objeto "XMLHttpRequest"
+                    // almacena el código de respuesta HTTP https://developer.mozilla.org/es/docs/Web/HTTP/Status
+                    if (this.readyState == 4 && this.status == 200) {
+                        // Indicamos que se ha borrado correctamente
+                        // Recuperando el mensaje que devuelve el fichero php que hemos llamado
+                        let mostrarEstado = document.getElementById("estadoOperacion");
+                        mostrarEstado.innerHTML= this.responseText;
+                        // Quitamos la clase que oculta el DIV del mensaje
+                        // https://www.w3schools.com/howto/howto_js_remove_class.asp
+                        mostrarEstado.classList.remove("ocultar");
+                        // Añadimos una clase que hará visible el DIV del mensaje
+                        // https://www.w3schools.com/howto/howto_js_add_class.asp
+                        mostrarEstado.classList.add("mostrar");
+                        // Y a los 3 segundos lo ocultará
+                        // https://www.w3schools.com/jsref/met_win_settimeout.asp
+                        setTimeout(function(){
+                            mostrarEstado.classList.remove("mostrar");
+                            mostrarEstado.classList.add("ocultar");
+                            // Si el mensaje de actualización no informa de ningún Error
+                            // https://www.w3schools.com/jsref/jsref_includes.asp
+                            if (!mostrarEstado.innerHTML.includes("Error")) {
+                                // volvemos a cargar la tabla
+                                cargarContenidoTabla();
+                                // Se pulsa el botón limpiar para que limpie el formulario.
+                                document.getElementById("btnLimpiar").click();
+                            }
+                        },3000);
+                    } 
+                };
+                // Para mandar los campos del formulario en un AJAX los cogemos del formulario y los pasamos a variables
+                let id=document.getElementById("enviado").value;
+                let nombre=document.getElementById("nombre-usuario").value;
+                let password=document.getElementById("aligned-password").value;
+                let email=document.getElementById("email-usuario").value;
+                let nacimiento=document.getElementById("fecha-nacimiento").value;
+
+                // Abre la petición HTTP al Servidor (en este caso a "controlador/actualizarUsuario.php")
+                // Pasándole el id que recibe como parámetro esta función
+                xmlhttp.open('GET','controlador/actualizarUsuario.php?id='+id+'&nombre='+nombre+'&pass='+password+'&email='+email+'&nacimi='+nacimiento);
+                // Envia la petición HTTP al Servidor
+                xmlhttp.send();
+            }
+
+            /**
+             * Haciendo una petición AJAX al script PHP que carga el <tbody> de la tabla
+             * realiza una consulta a la tabla "Usuario" de la BBDD y actualiza la vista en la tabla
+             */
+            function cargarContenidoTabla(){
+                var xmlhttp = new XMLHttpRequest();
+                // Cuando el objeto cambie de estado ejecutará una función
+                xmlhttp.onreadystatechange = function() {
+                    // La propiedad "readyState" del objeto "XMLHttpRequest"
+                    // almacena el estado actual (4 -> Estado Completado, la petición en este caso)
+                    // La propiedad "status" del objeto "XMLHttpRequest"
+                    // almacena el código de respuesta HTTP https://developer.mozilla.org/es/docs/Web/HTTP/Status
+                    if (this.readyState == 4 && this.status == 200) {
+                        // Recuperando el mensaje que devuelve el fichero php que hemos llamado
+                        document.getElementsByTagName("tbody")[0].innerHTML= this.responseText;
+                    } 
+                };
+                // Abre la petición HTTP al Servidor (en este caso a "controlador/cargarUsuario.php")
+                // Pasándole el id que recibe como parámetro esta función
+                xmlhttp.open('GET','controlador/cargarUsuario.php');
                 // Envia la petición HTTP al Servidor
                 xmlhttp.send();
             }
@@ -171,8 +302,11 @@
                             <input type="date" id="fecha-nacimiento" name="fechaNacimiento" placeholder="Fecha de nacimiento" />
                         </div>
                         <div class="pure-controls">
-                            <button type="submit" class="pure-button pure-button-primary" onclick="document.getElementById('enviado').value='true'">Registrar</button>
-                            <button type="reset" class="pure-button pure-button-primary" onclick="limpiar()">Limpiar</button>
+                            <!-- Se le han añadido el atributo "id" a todos los botones -->
+                            <button type="submit" class="pure-button pure-button-primary" onclick="document.getElementById('enviado').value='true'" id="btnRegistrar">Registrar</button>
+                            <!-- Se añade un botón más (oculto con la clase .ocultar) que llamará a la función JavaScript "actualizar()" -->
+                            <button type="button" class="pure-button pure-button-primary" onclick="actualizar()" id="btnActualizar">Actualizar</button>
+                            <button type="reset" class="pure-button pure-button-primary" onclick="limpiar()" id="btnLimpiar">Limpiar</button>
                         </div>
                     </fieldset>
                 </form>
@@ -196,109 +330,9 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <?php
-                            /* Cargamos los registro de la Base de Datos MySQL "crudPHP" */
-                            
-                            // Incluimos el archivo dónde conectamos a la Base de Datos
-                            // https://www.php.net/manual/es/function.include.php
-                            include "modelo/conexion.php";
-
-                            // Hacemos una consulta a la tabla crudPHP.Usuario
-                            // https://www.php.net/manual/es/mysqli.query.php
-                            $sql=$conexion->query("SELECT * FROM crudPHP.Usuario");
-
-                            // Para aplicar correctamente los estilos cebreados de la tabla
-                            // En filas contiguas color de fondo diferente
-                            $filaImpar=true;
-
-                            // Recorremos los datos obtenidos de la consulta anterior
-                            // fila a fila gracias a como lo devuelve la función:
-                            // https://www.php.net/manual/es/mysqli-result.fetch-object.php
-                            while ($datos = $sql->fetch_object()) {
-                                // Comprobamos si es fila par o impar para aplicar el estilo correspondiente
-                                if ($filaImpar){
-                        ?>
-                        <tr>
-                        <?php
-                                } else {
-                        ?>
-                        <tr class="pure-table-odd">
-                        <?php
-                                }
-                                // Indicamos que si esta fila es Impar la siguiente no lo es
-                                $filaImpar=!$filaImpar;
-                                /*
-                                    <?= ?>
-                                Es el equivalente de hacer
-
-                                    <?php echo; ?>
-                                https://www.php.net/manual/es/language.basic-syntax.phptags.php
-                                */
-                        ?>
-                            <td><?= $datos->usrId ?></td>
-                            <td><?= $datos->nombre ?></td>
-                            <td><?= $datos->password ?></td>
-                            <td><?= $datos->email ?></td>
-                            <td><?= $datos->fechaNac ?></td>
-                            <td>
-                                <!-- Botones "Buttons - Pure CSS" https://purecss.io/buttons/#customizing-buttons -->
-                                <button class="button-warning pure-button">
-                                    <!-- https://www.compart.com/en/unicode/U+270E -->
-                                    &#9998;
-                                </button>
-                                &nbsp;&nbsp;
-                                <button class="button-error pure-button" onclick="eliminar(<?= $datos->usrId ?>)">
-                                    <!-- https://www.amp-what.com/unicode/search/trash -->
-                                    &#128465;
-                                </button>
-                            </td>
-                        </tr>
-                        <?php
-                            }
-
-                            // Cerramos la conexión con la Base de Datos
-                            // https://www.php.net/manual/es/mysqli.close.php
-                            $conexion->close();
-                        ?>
-                        <!-- <tr>
-                            <td>2</td>
-                            <td>Prueba</td>
-                            <td>TestTest</td>
-                            <td>test@test.com</td>
-                            <td>20-12-1990</td>
-                            <td>
-                                <!-- Botones "Buttons - Pure CSS" https://purecss.io/buttons/#customizing-buttons -->
-                                <!-- <button class="button-warning pure-button">&#9998;</button>
-                                &nbsp;&nbsp;
-                                <button class="button-error pure-button">&#128465;</button>
-                            </td>
-                        </tr>
-                        <tr class="pure-table-odd">
-                            <td>3</td>
-                            <td>Oldest</td>
-                            <td>FirstUser</td>
-                            <td>main@user.com</td>
-                            <td>12-02-2000</td>
-                            <td>
-                                <!-- Botones "Buttons - Pure CSS" https://purecss.io/buttons/#customizing-buttons -->
-                                <!-- <button class="button-warning pure-button">&#9998;</button>
-                                &nbsp;&nbsp;
-                                <button class="button-error pure-button">&#128465;</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>4</td>
-                            <td>Curioso</td>
-                            <td>Visitante</td>
-                            <td>sniffer@snoffing.com</td>
-                            <td>03-07-1998</td>
-                            <td>
-                                <!-- Botones "Buttons - Pure CSS" https://purecss.io/buttons/#customizing-buttons -->
-                                <!-- <button class="button-warning pure-button">&#9998;</button>
-                                &nbsp;&nbsp;
-                                <button class="button-error pure-button">&#128465;</button>
-                            </td>
-                        </tr> -->
+                        <script>
+                            cargarContenidoTabla();
+                        </script>
                     </tbody>
                 </table>
                 <div id="estadoOperacion" class="ocultar">
